@@ -4,8 +4,7 @@
 ; Please see https://calva.io/output/ for more info.
 ; Happy coding! ♥️
 
-; Jacking in...
-; Starting Jack-in Terminal: cmd.exe /d /c lein update-in :dependencies conj [nrepl,"0.8.3"] -- update-in :plugins conj [cider/cider-nrepl,"0.26.0"] -- update-in [:repl-options,:nrepl-middleware] conj '["cider.nrepl/cider-middleware"]' -- repl :headless
+; Connecting ...
 ; Hooking up nREPL sessions...
 ; Connected session: clj
 ; TIPS: 
@@ -16,6 +15,48 @@
 ;      when the cursor is after the last contents at the prompt
 ;   - Clojure lines in stack traces are peekable and clickable.
 clj꞉curso.core꞉>  ; Use `alt+enter` to evaluate
-; Jack-in done.
-clj꞉curso.core꞉> 
-; nREPL Connection was closed
+; Syntax error compiling at (c:\Projetos\Clojure\Curso\src\curso\aula4.clj:77:1).
+; Unable to resolve symbol: println in this context
+clj꞉curso.aula4꞉> 
+; Syntax error compiling at (c:\Projetos\Clojure\Curso\src\curso\aula4.clj:77:1).
+; Unable to resolve symbol: println in this context
+clj꞉curso.aula4꞉> 
+; Syntax error compiling at (c:\Projetos\Clojure\Curso\src\curso\aula4.clj:76:1).
+; Unable to resolve symbol: println in this context
+clj꞉curso.aula4꞉> 
+; Syntax error compiling at (c:\Projetos\Clojure\Curso\src\curso\aula4.clj:76:1).
+; Unable to resolve symbol: println in this context
+clj꞉curso.aula4꞉> 
+; Syntax error compiling at (c:\Projetos\Clojure\Curso\src\curso\aula4.clj:76:1).
+; Unable to resolve symbol: println in this context
+clj꞉curso.aula4꞉> 
+; Syntax error compiling at (c:\Projetos\Clojure\Curso\src\curso\aula4.clj:76:1).
+; Unable to resolve symbol: println in this context
+clj꞉curso.aula4꞉> 
+; Syntax error compiling at (c:\Projetos\Clojure\Curso\src\curso\aula4.clj:76:1).
+; Unable to resolve symbol: println in this context
+clj꞉curso.aula4꞉> 
+; Syntax error compiling at (c:\Projetos\Clojure\Curso\src\curso\aula4.clj:76:1).
+; Unable to resolve symbol: println in this context
+clj꞉curso.aula4꞉> 
+; Syntax error compiling at (c:\Projetos\Clojure\Curso\src\curso\aula4.clj:76:1).
+; Unable to resolve symbol: println in this context
+clj꞉curso.aula4꞉> 
+; Syntax error compiling at (c:\Projetos\Clojure\Curso\src\curso\aula4.clj:76:1).
+; Unable to resolve symbol: println in this context
+clj꞉curso.aula4꞉> 
+(use 'curso.aula4)
+; Syntax error compiling at (c:\Projetos\Clojure\Curso\.calva\output-window\output.calva-repl:48:1).
+; Unable to resolve symbol: use in this context
+clj꞉curso.aula4꞉> 
+; Syntax error compiling at (c:\Projetos\Clojure\Curso\.calva\output-window\output.calva-repl:48:1).
+; Unable to resolve symbol: use in this context
+clj꞉curso.aula4꞉> 
+#'curso.aula4/precos
+clj꞉curso.aula4꞉> 
+; Syntax error compiling at (c:\Projetos\Clojure\Curso\src\curso\aula4.clj:5:1).
+; Unable to resolve symbol: println in this context
+clj꞉curso.aula4꞉> 
+; Syntax error compiling at (c:\Projetos\Clojure\Curso\src\curso\aula4.clj:5:1).
+; Unable to resolve symbol: println in this context
+clj꞉curso.aula4꞉> 

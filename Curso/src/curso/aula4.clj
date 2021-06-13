@@ -53,7 +53,7 @@
 (println (map valor-descontado precos))
 
 (println (range 10))
-(println (filter (range 10)))
+;(println (filter (range 10)))
 (println (filter even? (range 10)))
 
 ;implementação abaixo é bem comum
