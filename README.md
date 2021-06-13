@@ -1,2 +1,2 @@
 # Clojure-Class
-Project for Funcional Programming study, Chosen language: Clojure.
+Project for funcional programming study, Chosen language: Clojure.
