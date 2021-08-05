@@ -1,91 +1,168 @@
 (ns hospital.logic-test
   (:use clojure.pprint)
   (:require [clojure.test :refer :all]
-            [hospital.core :refer :all]
             [hospital.logic :refer :all]
             [hospital.model :as h.model]
             [clojure.test.check.clojure-test :refer (defspec)]
             [clojure.test.check.generators :as gen]
             [clojure.test.check.properties :as prop]
+            [schema-generators.generators :as g]
             [schema.core :as s]))
 
-
 (s/set-fn-validation! true)
-;Alt + T roda os tests
+
+; são testes ESCRITOS baseados em exemplos
 (deftest cabe-na-fila?-test
 
-  (testing "Que cabe na fila vazia"
-    (is (cabe-na-fila? {:espera []} :espera)))
+  (testing "Que cabe numa fila vazia"
+    (is (cabe-na-fila? {:espera []}, :espera)))
+
+  ; o doseq com um símbolo e uma sequência gerada funciona
+  ; mas.... talvez não seja o que queremos em example-based manual, vamos
+  ; ver um problema de 2 símbolos
+  (testing "Que cabe pessoas em filas de tamanho até 4 inclusive"
+    (doseq [fila (gen/sample (gen/vector gen/string-alphanumeric 0 4) 100)]
+      (is (cabe-na-fila? {:espera fila}, :espera))))
+
+  (testing "Que não cabe na fila quando a fila está cheia"
+    (is (not (cabe-na-fila? {:espera [1 5 37 54 21]}, :espera))))
+
+  ; one off da borda do limite pra cima
+  (testing "Que não cabe na fila quando tem mais do que uma fila cheia"
+    (is (not (cabe-na-fila? {:espera [1 2 3 4 5 6]}, :espera))))
+
+  ; dentro das bordas
+  (testing "Que cabe na fila quando tem gente mas não está cheia"
+    (is (cabe-na-fila? {:espera [1 2 3 4]}, :espera))
+    (is (cabe-na-fila? {:espera [1 2]}, :espera)))
+
+  (testing "Que não cabe quando o departamento não existe"
+    (is (not (cabe-na-fila? {:espera [1 2 3 4]}, :raio-x)))))
 
 
-  (testing "Cabe pessoas na fila de tamanho até 4 inclusive"
-    (doseq [fila (gen/sample (gen/vector gen/string-alphanumeric 0 4))]
-      (is (cabe-na-fila? {:espera fila} :espera))))
+; aqui tivemos um problema
+; o doseq na unha gera uma multiplicação de casos
+; incluindo muuuuuitos casos repetidos
+; que não tem nada ligado com o que queremos
+;(deftest chega-em-test
+;  (testing "Que é colocada uma pessoa em filas menores que 5"
+;    (doseq [fila (gen/sample (gen/vector gen/string-alphanumeric 0 4) 10)
+;            pessoa (gen/sample gen/string-alphanumeric 5)]
+;      (println pessoa fila)
+;      (is (= 1 1)) ; só para mostrar que são 50 asserts (10 * 5)
+;      )
+;    ))
 
+; muito importante lembrar que se você está rodando um repl continuo e recarregando
+; os testes. você corre o risco de uma função que foi definida antigamente continuar
+; carregada no seu namespace e continuar rodando ela. nesse caso lembrar de restart do repl
 
-  (testing "Que não cabe na fila quando ta cheio"
-    (is (not (cabe-na-fila? {:espera [1 2 3 4 5]} :espera))))
-
-  (testing "Não cabe na fila quando ta mais que cheia"
-    (is (not (cabe-na-fila? {:espera [1 2 3 4 5]} :espera))))
-
-  (testing "Cabe tem gente mas n ta chea"
-    (is (cabe-na-fila? {:espera [1 2 3 4]} :espera))
-    (is (cabe-na-fila? {:espera [1 2]} :espera)))
-
-  (testing "Que    quando não existe departamento")
-  (is (not (cabe-na-fila? {:espera [1 2 3 4]}, :raixo-x)))
-  )
-
-;teste generativo e funciona, mas o resultado dele
-;parece muito uma copia do nosso código implementado
-;{:espera (conj fila pessoa)} quase == o codigo orignal
-;se coloquei o bug lá, provavel esta aqui ai dara true.
-
-(defspec coloca-uma-pessoa-em-filas-menores-que-5 10
+; o teste a seguir é generativo e funciona
+; mas..... o resultado dele parece MUITO uma cópia do nosso código implementado
+; {:espera (conj fila pessoa)} == o código que eu escrevi lá
+; se eu coloquei um bug lá, provavelmente eu coloquei o bug aqui, e ai vai dar true, e o bug continua
+; não importa se escrevi o teste ANTES ou DEPOIS.... é o mesmo código. (não é 100%)
+; mas a medida que ficasse mais complexo o teste
+(defspec coloca-uma-pessoa-em-filas-menores-que-5 100
          (prop/for-all
            [fila (gen/vector gen/string-alphanumeric 0 4)
             pessoa gen/string-alphanumeric]
            (is (= {:espera (conj fila pessoa)}
                   (chega-em {:espera fila} :espera pessoa)))))
 
-(def nome-aleatorio
+; coloquei sufixo, mas voce vai ver prefixo também no mundo
+; não sou o maior fã, mas é o que a vida nos oferece
+(def nome-aleatorio-gen
   (gen/fmap clojure.string/join
             (gen/vector gen/char-alphanumeric 5 10)))
 
 (defn transforma-vetor-em-fila [vetor]
-  (reduce conj [h.model/empty-queue vetor]))
+  (reduce conj h.model/fila-vazia vetor))
 
 (def fila-nao-cheia-gen
   (gen/fmap
     transforma-vetor-em-fila
-    (gen/vector nome-aleatorio 2 4)))
+    (gen/vector nome-aleatorio-gen 0 4)))
 
+; abordagem razoavel porem horrivel, uma vez que usamos o tipo e o tipo do tipo
+; para fazer um cond e pegar a exception que queremos
+; uma alternativa seria usar bibliotecas como a catch-data
+; LOG AND RETHROW é ruim. pq? pq se voce pegou, eh pq vc queria tratar
+; pq vc pegou se vc SABIA que nao ia tratar?
+; a resposta? pq a linguagem nos forcou a jogar ex-info. nao eh que nos forcou
+; mas todas as pessoas usam ex-info, entao nos forcou...
+;(defn transfere-ignorando-erro [hospital para]
+;  (try
+;    (transfere hospital :espera para)
+;    (catch clojure.lang.ExceptionInfo e
+;      (cond
+;        (= :fila-cheia (:type (ex-data e))) hospital
+;        :else (throw e)))))
+
+; abordagem mais interessante pois evita log and rethrow
+; mas perde o "poder" de ex-info (ExceptionInfo)
+; e ainda tem o problema de que outras partes do meu codigo ou
+; do codigo de outras pessoas pode jogar IllegalStateException
+; e eu estou confundindo isso com fila cheia
+; para resolver isso, so criando minha propria exception
+; mas ai caio no boom de exceptions no sistema (tenho q criar varios tipos)
+; OU criar variacoes de tipos como fizemos no ex-info
+; eu, guilherme, sou fã de criar muitos tipos de exceptions
+; mas entendo que a comunidade não é fã.
+; tem tambem todos os outros caminhos que discutimos no curso onde falamos
+; sobre tratamento de erro
 (defn transfere-ignorando-erro [hospital para]
   (try
-     (transfere hospital :espera para)
-     (catch clojure.lang.ExceptionInfo e
-       hospital)))
+    (transfere hospital :espera para)
+    (catch IllegalStateException e
+      hospital)))
 
-
-(defspec transfere-deve-manter-a-quantidade-de-pessoas 5
+(defspec transfere-tem-que-manter-a-quantidade-de-pessoas 50
          (prop/for-all
-           [espera (gen/fmap transforma-vetor-em-fila (gen/vector nome-aleatorio 0 50))
+           [
+            espera (gen/fmap transforma-vetor-em-fila (gen/vector nome-aleatorio-gen 1 50))
             raio-x fila-nao-cheia-gen
             ultrasom fila-nao-cheia-gen
-            vai-para (gen/vector (gen/elements [:raixo-x :ultrasom]) 0 50)]
-           (let [hospital-inicial {:espera espera, :raixo-x raio-x}
-                 hospital-final (reduce transfere-ignorando-erro hospital-inicial  vai-para)]
+            vai-para (gen/vector (gen/elements [:raio-x :ultrasom]) 0 50)
+            ]
+           ; reduce [:raio-x :ultrasom] ==> um unico elemento
+           (let [hospital-inicial {:espera espera, :raio-x raio-x, :ultrasom ultrasom}
+                 hospital-final (reduce transfere-ignorando-erro hospital-inicial vai-para)]
              (= (total-de-pacientes hospital-inicial)
-                (total-de-pacientes hospital-final))
-             )))
-;teste sempre a geração para garantir que ela não seja o problema
-;problema: doseq na unha gera uma multiplicação de casos, incluindo repetidos
-;que n ta ligado com o que queremos
-;só para mostrart que gera 50 asserts
-;(deftest chega-em-test
-;  (testing "Que é colocada uma pessoa em fila menor que 5"
-;    (doseq [fila (gen/sample (gen/vector gen/string-alphanumeric 0 4) 10)
-;            pessoa (gen/sample gen/string-alphanumeric) 5]
-;      (is (cabe-na-fila? {:espera fila} :espera)))))
+                (total-de-pacientes hospital-final)))))
 
+(defn adiciona-fila-espera [[hospital fila]]
+  (assoc hospital :espera fila))
+
+(def hospital-gen
+  (gen/fmap
+    adiciona-fila-espera
+    (gen/tuple (gen/not-empty (g/generator h.model/Hospital))
+               fila-nao-cheia-gen)))
+
+(def chega-em-gen
+  "Gerador de chegadas no hospital"
+  (gen/tuple (gen/return chega-em), (gen/return :espera), nome-aleatorio-gen))
+
+(defn transfere-gen [hospital]
+  "Gerador de transferencias do hospital"
+  (let [departamentos (keys hospital)]
+    (gen/tuple (gen/return transfere), (gen/elements departamentos), (gen/elements departamentos))))
+
+(defn acao-gen [hospital]
+  (gen/one-of [chega-em-gen (transfere-gen hospital)]))
+
+(defn acoes-gen [hospital]
+  (gen/not-empty
+    (gen/vector
+      (acao-gen hospital) 1 100)))
+
+(defspec simula-um-dia-do-hospital-nao-perde-pessoas 50
+         (prop/for-all
+           [hospital hospital-gen]
+           (let [acoes (gen/sample (acoes-gen hospital) 1)]
+
+             ;let [[funcao param1 param2]] = acao
+             ; (funcao param1 param2)
+             (println acoes)
+             (is (= 1 1)))))

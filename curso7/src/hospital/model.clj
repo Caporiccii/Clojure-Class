@@ -1,13 +1,18 @@
 (ns hospital.model
   (:require [schema.core :as s]))
 
-(def empty-queue clojure.lang.PersistentQueue/EMPTY)
+; código do curso anterior
+
+(def fila-vazia clojure.lang.PersistentQueue/EMPTY)
 
 (defn novo-hospital []
-  {:espera       empty-queue
-   :laboratorio1 empty-queue
-   :laboratorio2 empty-queue
-   :laboratorio3 empty-queue})
+  {:espera       fila-vazia
+   :laboratorio1 fila-vazia
+   :laboratorio2 fila-vazia
+   :laboratorio3 fila-vazia})
+
+(defn novo-departamento []
+  fila-vazia)
 
 (s/def PacienteID s/Str)
 (s/def Departamento (s/queue PacienteID))
