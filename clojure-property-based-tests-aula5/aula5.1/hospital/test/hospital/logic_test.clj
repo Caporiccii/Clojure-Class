@@ -6,7 +6,6 @@
             [clojure.test.check.clojure-test :refer (defspec)]
             [clojure.test.check.generators :as gen]
             [clojure.test.check.properties :as prop]
-            [schema-generators.generators :as g]
             [schema.core :as s]))
 
 (s/set-fn-validation! true)
@@ -82,7 +81,7 @@
 (def fila-nao-cheia-gen
   (gen/fmap
     transforma-vetor-em-fila
-    (gen/vector nome-aleatorio-gen 0 4)))
+    (gen/vector nome-aleatorio 0 4)))
 
 ; abordagem razoavel porem horrivel, uma vez que usamos o tipo e o tipo do tipo
 ; para fazer um cond e pegar a exception que queremos
@@ -117,79 +116,21 @@
     (catch IllegalStateException e
       hospital)))
 
-(defspec transfere-tem-que-manter-a-quantidade-de-pessoas 50
+(defspec transfere-tem-que-manter-a-quantidade-de-pessoas 1
          (prop/for-all
            [
-            espera (gen/fmap transforma-vetor-em-fila (gen/vector nome-aleatorio-gen 1 50))
+            ;espera gen/string-alphanumeric
+            espera (gen/fmap transforma-vetor-em-fila (gen/vector nome-aleatorio 0 50))
             raio-x fila-nao-cheia-gen
             ultrasom fila-nao-cheia-gen
             vai-para (gen/vector (gen/elements [:raio-x :ultrasom]) 0 50)
             ]
            ; reduce [:raio-x :ultrasom] ==> um unico elemento
+           ;(println (count espera) (count vai-para) vai-para)
            (let [hospital-inicial {:espera espera, :raio-x raio-x, :ultrasom ultrasom}
                  hospital-final (reduce transfere-ignorando-erro hospital-inicial vai-para)]
+             ;(println (count (get hospital-final :raio-x)))
              (= (total-de-pacientes hospital-inicial)
-                (total-de-pacientes hospital-final)))))
-
-(defn adiciona-fila-espera [[hospital fila]]
-  (assoc hospital :espera fila))
-
-(def hospital-gen
-  (gen/fmap
-    adiciona-fila-espera
-    (gen/tuple (gen/not-empty (g/generator h.model/Hospital))
-               fila-nao-cheia-gen)))
-
-(def chega-em-gen
-  "Gerador de chegadas no hospital"
-  (gen/tuple (gen/return chega-em),
-             (gen/return :espera),
-             nome-aleatorio-gen
-             (gen/return 1)))
-
-(defn adiciona-inexistente-ao-departamento [departamento]
-  (keyword (str departamento "-inexistente")))
-
-(defn transfere-gen [hospital]
-  "Gerador de transferencias do hospital"
-  (let [departamentos (keys hospital)
-        departamentos-inexistentes (map adiciona-inexistente-ao-departamento departamentos)
-        todos-departamentos (concat departamentos departamentos-inexistentes)]
-    (gen/tuple (gen/return transfere),
-               (gen/elements todos-departamentos),
-               (gen/elements todos-departamentos)
-               (gen/return 0))))
-
-(defn acao-gen [hospital]
-  (gen/one-of [chega-em-gen (transfere-gen hospital)]))
-
-(defn acoes-gen [hospital]
-  (gen/not-empty
-    (gen/vector
-      (acao-gen hospital) 1 100)))
-
-(defn executa-uma-acao [situacao [funcao param1 param2 diferenca-se-sucesso]]
-  (let [hospital (:hospital situacao)
-        diferenca-atual (:diferenca situacao)]
-    (try
-      (let [hospital-novo (funcao hospital param1 param2)]
-        { :hospital hospital-novo,
-         :diferenca (+ diferenca-se-sucesso diferenca-atual)})
-      (catch IllegalStateException e
-        situacao)
-      ;caso mega especifico. erro generico que fica refem a situação
-      (catch AssertionError e
-        situacao))))
-
-(defspec simula-um-dia-do-hospital-nao-perde-pessoas 50
-         (prop/for-all
-           [hospital-inicial hospital-gen]
-           (let [acoes (gen/generate (acoes-gen hospital-inicial))
-                 situacao-inicial {:hospital hospital-inicial, :diferenca 0}
-                 total-de-pacientes-inicial (total-de-pacientes hospital-inicial)
-                 situacao-final (reduce executa-uma-acao situacao-inicial acoes)
-                 total-de-pacientes-final (total-de-pacientes (:hospital situacao-final))
-                 ]
-             ;let [[funcao param1 param2]] = acao
-             ; (funcao param1 param2)
-             (is (= (- total-de-pacientes-final (:diferenca situacao-final)) total-de-pacientes-inicial)))))
+                (total-de-pacientes hospital-final))
+             )
+           ))
